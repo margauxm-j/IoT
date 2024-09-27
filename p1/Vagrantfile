@@ -1,0 +1,75 @@
+Vagrant.configure("2") do |config|
+  # Configuration de la machine Server
+  config.vm.define "Server" do |server|
+    server.vm.box = "debian/buster64"
+    server.vm.hostname = "sohemamiS"
+
+    # Configuration d'un réseau privé avec une IP statique
+    server.vm.network "private_network", ip: "192.168.56.110", virtualbox__intnet: "gcptest-network"
+
+    # Configuration de NAT
+    server.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
+    end
+
+    # Provisionner un script shell pour installer SSH
+    server.vm.provision "shell", inline: <<-SHELL
+      # Mise à jour des paquets
+      sudo apt-get update
+      sudo apt-get install -y openssh-server
+      
+      # Vérifier que le service SSH fonctionne
+      sudo systemctl enable ssh
+      sudo systemctl start ssh
+    SHELL
+  end
+
+  # Configuration de la machine ServerWorker
+  config.vm.define "ServerWorker" do |worker|
+    worker.vm.box = "debian/buster64"
+    worker.vm.hostname = "sohemamiSW"
+
+    # Configuration d'un réseau privé avec une IP statique
+    worker.vm.network "private_network", ip: "192.168.56.111", virtualbox__intnet: "gcptest-network"
+
+    # Configuration de NAT
+    worker.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
+    end
+
+    # Provisionner un script shell pour installer SSH
+    worker.vm.provision "shell", inline: <<-SHELL
+      # Mise à jour des paquets
+      sudo apt-get update
+      sudo apt-get install -y openssh-server
+      
+      # Vérifier que le service SSH fonctionne
+      sudo systemctl enable ssh
+      sudo systemctl start ssh
+    SHELL
+  end
+
+  # Configuration du mode GUI pour le débogage
+  config.vm.provider "virtualbox" do |vb|
+    vb.gui = true
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
