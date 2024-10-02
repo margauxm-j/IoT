@@ -3,52 +3,61 @@ Vagrant.configure("2") do |config|
   config.vm.define "Server" do |server|
     server.vm.box = "debian/buster64"
     server.vm.hostname = "sohemamiS"
-
+  
     # Configuration d'un réseau privé avec une IP statique
     server.vm.network "private_network", ip: "192.168.56.110", virtualbox__intnet: "gcptest-network"
-
+  
     # Configuration de NAT
     server.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
       vb.memory = "1024"
     end
-
+  
     # Provisionner un script shell pour installer SSH et K3s
     server.vm.provision "shell", inline: <<-SHELL
       # Mise à jour des paquets
       sudo apt-get update
       sudo apt-get install -y openssh-server
-
+  
+      # Ouvrir le port 6443 pour K3s
+      sudo iptables -A INPUT -p tcp --dport 6443 -j ACCEPT
+  
       # Vérifier que le service SSH fonctionne
       sudo systemctl enable ssh
       sudo systemctl start ssh
-
+  
       # Donner les permissions d'exécution au script d'installation
       sudo chmod +x /vagrant/scripts/install_k3s.sh
-
+  
       # Installer K3s et configurer les permissions
       /vagrant/scripts/install_k3s.sh server
     SHELL
   end
+  
 
-  # Configuration de la machine ServerWorker
+ # Configuration de la machine ServerWorker
   config.vm.define "ServerWorker" do |worker|
     worker.vm.box = "debian/buster64"
     worker.vm.hostname = "sohemamiSW"
 
-    # Configuration d'un réseau privé avec une IP statique
+   # Configuration d'un réseau privé avec une IP statique
     worker.vm.network "private_network", ip: "192.168.56.111", virtualbox__intnet: "gcptest-network"
 
     # Configuration de NAT
     worker.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
-    end
+  end
 
     # Provisionner un script shell pour installer SSH et K3s en mode agent
     worker.vm.provision "shell", inline: <<-SHELL
       # Mise à jour des paquets
       sudo apt-get update
       sudo apt-get install -y openssh-server
+
+      # Activer UFW et ouvrir le port 6443
+      sudo ufw allow OpenSSH
+      sudo ufw allow 6443/tcp
+      sudo ufw enable
 
       # Vérifier que le service SSH fonctionne
       sudo systemctl enable ssh
@@ -58,15 +67,32 @@ Vagrant.configure("2") do |config|
       sudo chmod +x /vagrant/scripts/install_k3s.sh
 
       # Installer K3s en tant qu'agent
-      /vagrant/scripts/install_k3s.sh agent
+      K3S_TOKEN=$(cat /vagrant/k3s_token) # Récupérer le token depuis le fichier partagé
+      sudo curl -sfL https://get.k3s.io | K3S_URL=https://192.168.56.110:6443 K3S_TOKEN=$K3S_TOKEN sudo sh -
+
+      # Modifier les permissions pour /etc/rancher/k3s/k3s.yaml après l'installation
+      sudo chmod 644 /etc/rancher/k3s/k3s.yaml  # Modifier les permissions du fichier
+      sudo chown vagrant:vagrant /etc/rancher/k3s/k3s.yaml  # Changer le propriétaire du fichier
+
+      # Exporter la configuration kubeconfig
+      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+      # Vérifier que K3s fonctionne correctement
+      sudo systemctl status k3s
     SHELL
   end
+
 
   # Configuration du mode GUI pour le débogage
   config.vm.provider "virtualbox" do |vb|
     vb.gui = true
   end
 end
+
+
+
+
+
 
 
 

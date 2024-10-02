@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Installation de K3s sur le contrôleur ou en tant qu'agent
 if [ "$1" == "server" ]; then
     # Installer K3s en tant que serveur
