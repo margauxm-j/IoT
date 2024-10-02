@@ -10,17 +10,24 @@ Vagrant.configure("2") do |config|
     # Configuration de NAT
     server.vm.provider "virtualbox" do |vb|
       vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
+      vb.memory = "1024"
     end
 
-    # Provisionner un script shell pour installer SSH
+    # Provisionner un script shell pour installer SSH et K3s
     server.vm.provision "shell", inline: <<-SHELL
       # Mise à jour des paquets
       sudo apt-get update
       sudo apt-get install -y openssh-server
-      
+
       # Vérifier que le service SSH fonctionne
       sudo systemctl enable ssh
       sudo systemctl start ssh
+
+      # Donner les permissions d'exécution au script d'installation
+      sudo chmod +x /vagrant/scripts/install_k3s.sh
+
+      # Installer K3s et configurer les permissions
+      /vagrant/scripts/install_k3s.sh server
     SHELL
   end
 
@@ -37,15 +44,21 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--natnet1", "10.3/16"]
     end
 
-    # Provisionner un script shell pour installer SSH
+    # Provisionner un script shell pour installer SSH et K3s en mode agent
     worker.vm.provision "shell", inline: <<-SHELL
       # Mise à jour des paquets
       sudo apt-get update
       sudo apt-get install -y openssh-server
-      
+
       # Vérifier que le service SSH fonctionne
       sudo systemctl enable ssh
       sudo systemctl start ssh
+
+      # Donner les permissions d'exécution au script d'installation
+      sudo chmod +x /vagrant/scripts/install_k3s.sh
+
+      # Installer K3s en tant qu'agent
+      /vagrant/scripts/install_k3s.sh agent
     SHELL
   end
 
@@ -54,6 +67,34 @@ Vagrant.configure("2") do |config|
     vb.gui = true
   end
 end
+
+
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+  
+  
+
+
+
+
+
+
 
 
 
