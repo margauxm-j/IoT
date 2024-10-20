@@ -1,0 +1,42 @@
+Vagrant.configure("2") do |config|
+  # Configuration du contrôleur
+  config.vm.define "controller" do |controller|
+    controller.vm.box = "debian/bullseye64"
+    controller.vm.hostname = "sohemamiS"
+    
+    # Configuration du réseau avec une adresse IP fixe
+    controller.vm.network "private_network", ip: "192.168.56.110"
+
+    # Configuration de NAT et des ressources
+    controller.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+
+    # Provisionnement
+    controller.vm.provision "shell", inline: <<-SHELL
+      sudo apt-get update -y
+      sudo apt-get install -y curl net-tools nginx
+  
+      curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+
+      # Déployer Nginx
+      kubectl apply -f /vagrant/confs/configmap-app1.yaml
+      kubectl apply -f /vagrant/confs/nginx-deployment-app1.yaml
+      echo "Nginx deployment succeeded."
+      
+      # Déployer Ingress
+      kubectl apply -f /vagrant/confs/nginx-ingress.yaml
+      echo "Ingress deployment succeeded."
+
+      # Modifier le fichier /etc/hosts pour ajouter l'entrée app1.com
+      if ! grep -q "app1.com" /etc/hosts; then
+          echo "192.168.56.110 app1.com" | sudo tee -a /etc/hosts
+          echo "Added app1.com to /etc/hosts"
+      fi
+    SHELL
+  end
+end
+
+  
+  
