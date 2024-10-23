@@ -5,3 +5,4 @@
 - ```vagrant destroy``` : _supprimer la machine_
 - ```vagrant reload``` : _redémarrer avec de nouveaux paramètres_ 
 - ```vagrant ssh``` : _permet de se connecter à la machine_
+- ```vagrant global-status --prune``` : _tout supprimer (y compris dossier .vagrant)_
