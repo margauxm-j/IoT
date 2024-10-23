@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app2
+  template:
+    metadata:
+      labels:
+        app: app2
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-files
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: html-files
+        configMap:
+          name: app2-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2
+spec:
+  type: NodePort   # Changer ClusterIP en NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30002  # Un port entre 30000 et 32767
+  selector:
+    app: app2
